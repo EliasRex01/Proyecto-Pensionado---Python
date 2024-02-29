@@ -19,7 +19,7 @@ def scrape_view(request):
     chrome_options = Options()
     chrome_options.add_argument('--headless')  # Para ejecutar Chrome en modo sin cabeza (headless)
     driver = webdriver.Chrome(options=chrome_options)  # O webdriver.Firefox() si estás usando Firefox
-    driver.get("URL_DE_LA_PAGINA")
+    driver.get("https://www.mef.gov.py/portalspir/lamdpnc.jsp")
 
     # Obtener el CI de la solicitud POST
     ci = request.POST.get('ci')
