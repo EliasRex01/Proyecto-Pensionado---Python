@@ -10,7 +10,7 @@ class Scraper:
         self.driver = webdriver.Chrome()
         self.driver.implicitly_wait(10)  # Esperar hasta 10 segundos para que los elementos aparezcan en la página
 
-    def scrape_and_save_pdf(self, ci):
+    def scrape_y_guardado(self, ci):
         url = "https://www.mef.gov.py/portalspir/pensiondpnc.jsp"
         
         # Abrir la página en el navegador
@@ -57,4 +57,4 @@ class Scraper:
 
 # Uso de la clase Scraper
 scraper = Scraper()
-scraper.scrape_and_save_pdf("1234567")  # Reemplaza "1234567" con el CI que deseas buscar
+scraper.scrape_y_guardado("22426")  
