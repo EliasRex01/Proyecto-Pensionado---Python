@@ -1,17 +1,21 @@
 import requests
+import time
+from abc import ABC, ABCMeta, abstractmethod
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import time
 from selenium.webdriver.common.by import By 
 from selenium.webdriver.common.keys import Keys
 
 # clase base que abstrae a un pensionado (abstracta)
 class Pensionado:
+  __metaclass__ = ABCMeta
 
   def __init__(self):
     pass
 
-  # operacion base de buscar que es usado por las otras subclases pero de multiples formas (polimorfica)
+  # operacion base de buscar que es usado por las otras subclases pero de 
+  # multiples formas (polimorfica)
+  @abstractmethod
   def buscar(self, ci):
     raise NotImplementedError(
         "Este metodo debe ser implementado por las subclases")
@@ -19,7 +23,8 @@ class Pensionado:
 # clase que abstrae a un pensionado regular 
 class PensionadoRegular(Pensionado):
 
-  #operacion para buscar datos de un pensionado regular, se usa directamente el json de la pagina
+  # operacion para buscar datos de un pensionado regular, 
+  # se usa directamente el json de la pagina
   def buscar(self, ci):
     url = "https://www.mef.gov.py/portalspir/data_lam.json"
     response = requests.get(url)
@@ -30,6 +35,7 @@ class PensionadoRegular(Pensionado):
         return row
 
     return None
+    
 # clase que abstrae a un pensionado que es honorifico
 class PensionadoHonorifico(Pensionado):
   def __init__(self):
@@ -41,7 +47,10 @@ class PensionadoHonorifico(Pensionado):
 
     self.driver = webdriver.Chrome(options=options)
     self.driver.implicitly_wait(10)
-    # implementacion de la operacion polimorfica buscar, en este caso se usa la captura de datos con selenium ya que la pagina no devuelve un tipo json o siquiera un archivo de tipo valido
+
+  # implementacion de la operacion polimorfica buscar, en este caso se usa la captura 
+  # de datos con selenium ya que la pagina no devuelve un tipo json o siquiera un 
+  # archivo de tipo valido
   def buscar(self, ci):
     url = "https://www.mef.gov.py/portalspir/pensiondpnc.jsp"
 
@@ -75,12 +84,45 @@ class PensionadoHonorifico(Pensionado):
     print(f"Fecha de Ingreso: {fecha_ingreso}")
     print(f"Monto de Pensión: {monto_pension}")
 
-# clase que abstrae la consulta del pensionado y hace uso de la operacion buscar en sus operaciones consultar
+# clase que abstrae a un pensionado al cual se falta algun documento
+class PensionadoEnProceso(Pensionado):
+
+  def buscar(self, ci):
+    url = "https://www.mef.gov.py/portalspir/faltadoclam.json"
+    response = requests.get(url)
+    json_data = response.json()
+  
+    for row in json_data['rows']:
+      if row[2] == ci:
+        return row
+  
+    return None
+
+# clase que abstrae a un candidato a pensionado
+class PensionadoCandidato(Pensionado):
+
+  # operacion para buscar datos de un candidato a pensionado, 
+  # se usa directamente el json de la pagina
+  def buscar(self, ci):
+    url = "https://www.mef.gov.py/portalspir/censolam.json"
+    response = requests.get(url)
+    json_data = response.json()
+
+    for row in json_data['rows']:
+      if row[2] == ci:
+        return row
+
+    return None
+
+# clase que abstrae la consulta del pensionado y hace uso de la operacion 
+# buscar en sus operaciones consultar
 class Consulta:
 
   def __init__(self):
     self.pensionado_regular = PensionadoRegular()
     self.pensionado_honorifico = PensionadoHonorifico()
+    self.pensionado_faltadoc = PensionadoEnProceso()
+    self.pensionado_candidato = PensionadoCandidato()
 
   #operacion para consultar los datos del pensionado regular
   def consultar_regular(self, ci):
@@ -90,13 +132,28 @@ class Consulta:
     else:
         self.mostrar_datos_pensionado_regular(dato)
 
-  #operacion para consultar los datos del pensionado honorifico
+  # operacion para consultar los datos del pensionado honorifico
   def consultar_honorifico(self, ci):
     dato = self.pensionado_honorifico.buscar(ci)
     if dato is None:
         print("")
 
+  # operacion para consultar los datos del pensionado al cual le faltan documentos
+  def consultar_faltadoc(self, ci):
+    dato = self.pensionado_faltadoc.buscar(ci)
+    if dato is None:
+        print("")
+    else:
+        self.mostrar_datos_faltadoc(dato)
 
+  # operacion para consultar los datos del candidato a pensionado
+  def consultar_candidato(self, ci):
+    dato = self.pensionado_candidato.buscar(ci)
+    if dato is None:
+        print("")
+    else:
+        self.mostrar_datos_candidato(dato)
+  
   # operacion que muestra en pantalla los datos del pensionado regular
   def mostrar_datos_pensionado_regular(self, data):
     print("")
@@ -111,9 +168,36 @@ class Consulta:
     print(f"Com. Indigena: {data[7]}")
     print("")
 
+  # operacion que muestra en pantalla los datos del pensionado con documentos faltantes
+  def mostrar_datos_faltadoc(self, data):
+    print("")
+    print("Datos Del Adulto Mayor:")
+    print(f"CI: {data[2]}")
+    print(f"Nombre y Apellido: {data[3]}")
+    print(f"Departamento: {data[0]}")
+    print(f"Distrito: {data[1]}")
+    print("El Adulto Mayor Necesita Completar Su Documentacion")
+    print("")
+
+  # operacion que muestra en pantalla los datos del candidato a pensionado
+  def mostrar_datos_candidato(self, data):
+    print("")
+    print("Datos Del Adulto Mayor:")
+    print(f"CI: {data[2]}")
+    print(f"Nombre y Apellido: {data[3]}")
+    print(f"Departamento: {data[0]}")
+    print(f"Distrito: {data[1]}")
+    print(f"Año Del Censo: {data[5]}")
+    print(f"Institucion: {data[6]}")
+    print(f"Situacion: {data[4]}")
+    print("El Adulto Mayor Necesita Completar Su Documentacion")
+    print("")
+
 # llamada a la consulta
 c = Consulta()
 ci = input("Ingrese el numero de cedula del adulto mayor: ")
 
 c.consultar_regular(ci)
 c.consultar_honorifico(ci)
+c.consultar_faltadoc(ci)
+c.consultar_candidato(ci)
