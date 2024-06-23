@@ -84,17 +84,17 @@ class GUI:
         tk.Label(marco, text=f"Sexo: {data[4]}").pack()
         tk.Label(marco, text=f"Estado: {data[5]}").pack()
         tk.Label(marco, text=f"Fecha de Ingreso: {data[6]}").pack()
-        tk.Label(marco, text=f"Comunidad Indígena: {data[7]}").pack()
+        tk.Label(marco, text=f"Comunidad Indigena: {data[7]}").pack()
 
     def mostrar_datos_honorifico(self, marco, data):
-        tk.Label(marco, text="Datos Del Pensionado Honorífico:").pack()
+        tk.Label(marco, text="Datos Del Pensionado Honorifico:").pack()
         tk.Label(marco, text=f"CI: {data.ci}").pack()
         tk.Label(marco, text=f"Nombre y Apellido: {data.nombre_apellido}").pack()
         tk.Label(marco, text=f"Departamento: {data.departamento}").pack()
         tk.Label(marco, text=f"Distrito: {data.distrito}").pack()
-        tk.Label(marco, text=f"Concepto de Pensión: {data.concepto_pension}").pack()
+        tk.Label(marco, text=f"Concepto de Pension: {data.concepto_pension}").pack()
         tk.Label(marco, text=f"Fecha de Ingreso: {data.fecha_ingreso}").pack()
-        tk.Label(marco, text=f"Monto de la Pensión: {data.monto_pension}").pack()
+        tk.Label(marco, text=f"Monto de la Pensinn: {data.monto_pension}").pack()
 
     def mostrar_datos_faltadoc(self, marco, data):
         tk.Label(marco, text="Datos Del Adulto Mayor:").pack()
@@ -113,7 +113,7 @@ class GUI:
         tk.Label(marco, text=f"Sexo: {data[4]}").pack()
         tk.Label(marco, text=f"Estado: {data[5]}").pack()
         tk.Label(marco, text=f"Fecha de Ingreso: {data[6]}").pack()
-        tk.Label(marco, text=f"Comunidad Indígena: {data[7]}").pack()
+        tk.Label(marco, text=f"Comunidad Indigena: {data[7]}").pack()
 
     def limpiar_ventana(self):
         for widget in self.root.winfo_children():
@@ -134,7 +134,7 @@ class Pensionado(Persona):
 class Categoria(metaclass=ABCMeta):
     @abstractmethod
     def buscar(self, ci):
-        raise NotImplementedError("La operación debe ser implementada")
+        raise NotImplementedError("La operacion debe ser implementada")
 
 class Regular(Categoria):
     def buscar(self, ci):
@@ -145,7 +145,7 @@ class Regular(Categoria):
         try:
             json_data = response.json()
         except ValueError:
-            raise CedulaNoExisteException("Error al decodificar la respuesta de Regular")
+            raise CedulaNoExisteException("Error, el valor no pertenece a un pensionado regular")
         print(f"Buscando en Regular: {ci}")
 
         for row in json_data['rows']:
@@ -153,7 +153,7 @@ class Regular(Categoria):
                 print(f"Encontrado en Regular: {row}")
                 return row
 
-        raise CedulaNoExisteException("El número de cédula no existe")
+        raise CedulaNoExisteException("El numero de cedula no existe en regulares")
 
 class Honorifico(Categoria):
     def __init__(self):
@@ -199,7 +199,7 @@ class Honorifico(Categoria):
         except NoSuchElementException:
             print("No encontrado en Honorifico")
 
-        raise CedulaNoExisteException("El número de cédula no existe en honoríficos")
+        raise CedulaNoExisteException("El numero de cedula no existe en honorificos")
 
 class HonorificoData:
     def __init__(self, ci, nombre_apellido, departamento, distrito, concepto_pension, fecha_ingreso, monto_pension):
@@ -223,7 +223,7 @@ class EnProceso(Categoria):
         try:
             json_data = response.json()
         except ValueError:
-            raise CedulaNoExisteException("Error al decodificar la respuesta de En Proceso")
+            raise CedulaNoExisteException("Error, el valor no pertenece a un pensionado en proceso")
         print(f"Buscando en EnProceso: {ci}")
 
         for row in json_data['rows']:
@@ -231,7 +231,7 @@ class EnProceso(Categoria):
                 print(f"Encontrado en EnProceso: {row}")
                 return row
 
-        raise CedulaNoExisteException("El número de cédula no existe en En Proceso")
+        raise CedulaNoExisteException("El numero de cedula no existe en los que estan en proceso")
 
 class Candidato(Categoria):
     def buscar(self, ci):
@@ -242,7 +242,7 @@ class Candidato(Categoria):
         try:
             json_data = response.json()
         except ValueError:
-            raise CedulaNoExisteException("Error al decodificar la respuesta de Candidato")
+            raise CedulaNoExisteException("Error, el valor no pertenece a un pensionado candidato")
         print(f"Buscando en Candidato: {ci}")
 
         for row in json_data['rows']:
@@ -250,7 +250,7 @@ class Candidato(Categoria):
                 print(f"Encontrado en Candidato: {row}")
                 return row
 
-        raise CedulaNoExisteException("El número de cédula no existe en Candidato")
+        raise CedulaNoExisteException("El numero de cedula no existe en candidatos")
 
 class CedulaNoExisteException(Exception):
     def __init__(self, message):
@@ -283,16 +283,16 @@ class PostScraping:
         self.ps_candidato = Candidato()
         self.ps_honorifico = Honorifico()
         self.datos_honorificos = []
-        self.gui = gui  # Guardar el objeto GUI
+        self.gui = gui
 
     def procesar(self, ci):
         encontrado = False
         datos = None
         tipo = None
         try:
-            print(f"Procesando cédula: {ci}")
+            print(f"Procesando cedula con numero: {ci}")
             if not ci.isdigit():
-                raise CedulaNoValidaException("La cédula debe ser numérica")
+                raise CedulaNoValidaException("El numero de cedula debe ser numerico")
             datos, tipo = self.procesar_regular(ci)
             if not datos:
                 datos, tipo = self.procesar_faltadoc(ci)
@@ -304,7 +304,7 @@ class PostScraping:
             if datos:
                 self.guardar_datos(ci, datos, tipo)
             else:
-                raise CedulaNoExisteException("El número de cédula no existe")
+                raise CedulaNoExisteException("El numero de cedula no existe")
         except (CedulaNoExisteException, CedulaNoValidaException) as e:
             raise e
 
@@ -364,7 +364,7 @@ class PostScraping:
 
 def main():
     """
-    Operación main principal que invoca el sistema
+    Operacion main principal que invoca el sistema
     """
     root = tk.Tk()
     gui = GUI(root, None)
