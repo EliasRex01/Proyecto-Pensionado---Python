@@ -1,111 +1,179 @@
-#!/usr/bin/env python3
-'''
-Sistema que hace Scraping sobre la informacion de pensionados 
-de la pagina de hacienda
-Pagina Principal:
-https://www.mef.gov.py/portalspir/dpnc.jsp
-'''
-
+import requests
 import pickle
+import time
 from abc import ABCMeta, abstractmethod
+import tkinter as tk
+from tkinter import messagebox
 from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
-import requests
-import time
 
-#------------------------------------------------------------------------------------
+class GUI:
+    def __init__(self, root, controller):
+        self.root = root
+        self.controller = controller
+
+    def mostrar_menu(self):
+        self.root.title("Sistema de Pensionados")
+        self.root.geometry("500x400")
+
+        marco_menu = tk.Frame(self.root)
+        marco_menu.pack(pady=20)
+
+        boton_ingresar_ci = tk.Button(marco_menu, text="Ingresar número de cédula", command=self.mostrar_entrada_ci)
+        boton_ingresar_ci.pack(pady=10)
+
+        boton_salir = tk.Button(marco_menu, text="Salir", command=self.root.quit)
+        boton_salir.pack(pady=10)
+
+    def mostrar_entrada_ci(self):
+        self.limpiar_ventana()
+
+        marco_entrada_ci = tk.Frame(self.root)
+        marco_entrada_ci.pack(pady=20)
+
+        etiqueta_ci = tk.Label(marco_entrada_ci, text="Ingrese el número de cédula del adulto mayor:")
+        etiqueta_ci.pack(pady=5)
+
+        self.entrada_ci = tk.Entry(marco_entrada_ci)
+        self.entrada_ci.pack(pady=5)
+
+        boton_enviar = tk.Button(marco_entrada_ci, text="Enviar", command=lambda: self.controller.solicitar_ci(self.entrada_ci))
+        boton_enviar.pack(pady=10)
+
+        boton_volver = tk.Button(marco_entrada_ci, text="Volver", command=self.mostrar_menu)
+        boton_volver.pack(pady=10)
+
+    def mostrar_error(self, mensaje):
+        self.limpiar_ventana()
+
+        marco_error = tk.Frame(self.root)
+        marco_error.pack(pady=20)
+
+        etiqueta_error = tk.Label(marco_error, text=mensaje, fg="red")
+        etiqueta_error.pack(pady=5)
+
+        boton_volver = tk.Button(marco_error, text="Volver", command=self.mostrar_entrada_ci)
+        boton_volver.pack(pady=10)
+
+    def mostrar_datos(self, data, tipo):
+        self.limpiar_ventana()
+        marco_datos = tk.Frame(self.root)
+        marco_datos.pack(pady=20)
+
+        if tipo == 'regular':
+            self.mostrar_datos_regular(marco_datos, data)
+        elif tipo == 'honorifico':
+            self.mostrar_datos_honorifico(marco_datos, data)
+        elif tipo == 'faltadoc':
+            self.mostrar_datos_faltadoc(marco_datos, data)
+        elif tipo == 'candidato':
+            self.mostrar_datos_candidato(marco_datos, data)
+
+        boton_volver = tk.Button(marco_datos, text="Volver", command=self.mostrar_menu)
+        boton_volver.pack(pady=10)
+
+    def mostrar_datos_regular(self, marco, data):
+        tk.Label(marco, text="Datos del pensionado:").pack()
+        tk.Label(marco, text=f"CI: {data[2]}").pack()
+        tk.Label(marco, text=f"Nombre y Apellido: {data[3]}").pack()
+        tk.Label(marco, text=f"Departamento: {data[0]}").pack()
+        tk.Label(marco, text=f"Distrito: {data[1]}").pack()
+        tk.Label(marco, text=f"Sexo: {data[4]}").pack()
+        tk.Label(marco, text=f"Estado: {data[5]}").pack()
+        tk.Label(marco, text=f"Fecha de Ingreso: {data[6]}").pack()
+        tk.Label(marco, text=f"Comunidad Indígena: {data[7]}").pack()
+
+    def mostrar_datos_honorifico(self, marco, data):
+        tk.Label(marco, text="Datos Del Pensionado Honorífico:").pack()
+        tk.Label(marco, text=f"CI: {data.ci}").pack()
+        tk.Label(marco, text=f"Nombre y Apellido: {data.nombre_apellido}").pack()
+        tk.Label(marco, text=f"Departamento: {data.departamento}").pack()
+        tk.Label(marco, text=f"Distrito: {data.distrito}").pack()
+        tk.Label(marco, text=f"Concepto de Pensión: {data.concepto_pension}").pack()
+        tk.Label(marco, text=f"Fecha de Ingreso: {data.fecha_ingreso}").pack()
+        tk.Label(marco, text=f"Monto de la Pensión: {data.monto_pension}").pack()
+
+    def mostrar_datos_faltadoc(self, marco, data):
+        tk.Label(marco, text="Datos Del Adulto Mayor:").pack()
+        tk.Label(marco, text=f"CI: {data[2]}").pack()
+        tk.Label(marco, text=f"Nombre y Apellido: {data[3]}").pack()
+        tk.Label(marco, text=f"Departamento: {data[0]}").pack()
+        tk.Label(marco, text=f"Distrito: {data[1]}").pack()
+        tk.Label(marco, text="El Adulto Mayor Necesita Completar Documentos").pack()
+
+    def mostrar_datos_candidato(self, marco, data):
+        tk.Label(marco, text="Datos Del Adulto Mayor:").pack()
+        tk.Label(marco, text=f"CI: {data[2]}").pack()
+        tk.Label(marco, text=f"Nombre y Apellido: {data[3]}").pack()
+        tk.Label(marco, text=f"Departamento: {data[0]}").pack()
+        tk.Label(marco, text=f"Distrito: {data[1]}").pack()
+        tk.Label(marco, text=f"Sexo: {data[4]}").pack()
+        tk.Label(marco, text=f"Estado: {data[5]}").pack()
+        tk.Label(marco, text=f"Fecha de Ingreso: {data[6]}").pack()
+        tk.Label(marco, text=f"Comunidad Indígena: {data[7]}").pack()
+
+    def limpiar_ventana(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
 class Persona(metaclass=ABCMeta):
-    """
-    Clase diferida que abstrae a una persona
-    """
     def __init__(self, ci):
-        """
-        Constructor base para inicializar los atributos comunes de una persona
-
-        :param ci: numero de cedula de una persona
-        """
         self.ci = ci
 
-#------------------------------------------------------------------------------------
-
 class Pensionado(Persona):
-    """
-    Clase que abstrae a un pensionado
-    """
     def __init__(self, ci, categoria):
-        """
-        Constructor que hereda del init de persona
-
-        :param ci: numero de cedula de una persona
-        :param categoria: categoria a la que pertenece un pensionado
-        """
         super().__init__(ci)
         self.categoria = categoria
 
     def buscar_categoria(self):
-        """
-        Operacion que realiza la busqueda del pensionado por su categoria
-
-        :return: Busqueda por categoria
-        """
         return self.categoria.buscar(self.ci)
 
-#------------------------------------------------------------------------------------
-
 class Categoria(metaclass=ABCMeta):
-    """
-    Clase diferida que abstrae una categoria de pensionado
-    """
     @abstractmethod
     def buscar(self, ci):
-        """
-        Operacion diferida que debe ser implementado por las clases derivadas
-        para buscar a una categoria de pensionado
-
-        :param ci: numero de cedula de una persona
-        """
-        raise NotImplementedError("La operacion debe ser implementada")
-
-#------------------------------------------------------------------------------------
+        raise NotImplementedError("La operación debe ser implementada")
 
 class Regular(Categoria):
-    """
-    Clase que abstrae una categoria regular de pensionado
-    """
     def buscar(self, ci):
         url = "https://www.mef.gov.py/portalspir/data_lam.json"
         response = requests.get(url)
-        json_data = response.json()
+        if response.status_code != 200:
+            raise CedulaNoExisteException("Error al consultar la base de datos de Regular")
+        try:
+            json_data = response.json()
+        except ValueError:
+            raise CedulaNoExisteException("Error al decodificar la respuesta de Regular")
+        print(f"Buscando en Regular: {ci}")
 
         for row in json_data['rows']:
             if row[2] == ci:
+                print(f"Encontrado en Regular: {row}")
                 return row
 
-        return None
-
-#------------------------------------------------------------------------------------
+        raise CedulaNoExisteException("El número de cédula no existe")
 
 class Honorifico(Categoria):
-    """
-    Clase que abstrae una categoria honorifico de pensionado
-    """
     def __init__(self):
+        self.driver = None
+
+    def setup_driver(self):
         options = Options()
         options.add_argument('--no-sandbox')
         options.add_argument('--headless')
         options.add_argument('--disable-dev-shm-usage')
-
         self.driver = webdriver.Chrome(options=options)
         self.driver.implicitly_wait(10)
 
     def buscar(self, ci):
-        url = "https://www.mef.gov.py/portalspir/pensiondpnc.jsp"
+        if self.driver is None:
+            self.setup_driver()
 
+        url = "https://www.mef.gov.py/portalspir/pensiondpnc.jsp"
         self.driver.get(url)
+        print(f"Buscando en Honorifico: {ci}")
 
         try:
             ci_input = self.driver.find_element(By.NAME, "ci")
@@ -113,255 +181,198 @@ class Honorifico(Categoria):
             ci_input.send_keys(Keys.RETURN)
             time.sleep(8)
 
-            ci = self.driver.find_element(
-                By.CSS_SELECTOR, "td[aria-describedby='list_ci']").text
-            nombre_apellido = self.driver.find_element(
-                By.CSS_SELECTOR, "td[aria-describedby='list_nombre']").text
-            departamento = self.driver.find_element(
-                By.CSS_SELECTOR, "td[aria-describedby='list_depto']").text
-            distrito = self.driver.find_element(
-                By.CSS_SELECTOR, "td[aria-describedby='list_distrito']").text
-            concepto_pension = self.driver.find_element(
-                By.CSS_SELECTOR, "td[aria-describedby='list_concepto']").text
-            fecha_ingreso = self.driver.find_element(
-                By.CSS_SELECTOR,
-                "td[aria-describedby='list_fechaIngreso']").text
-            monto_pension = self.driver.find_element(
-                By.CSS_SELECTOR, "td[aria-describedby='list_monto']").text
+            ci = self.driver.find_element(By.CSS_SELECTOR, "td[aria-describedby='tabla_cedula']")
 
-            print("Datos del pensionado:")
-            print(f"CI: {ci}")
-            print(f"Nombre: {nombre_apellido}")
-            print(f"Departamento: {departamento}")
-            print(f"Distrito: {distrito}")
-            print(f"Concepto: {concepto_pension}")
-            print(f"Fecha de Ingreso: {fecha_ingreso}")
-            print(f"Monto de Pension: {monto_pension}")
+            if ci is not None:
+                honorifico_data = HonorificoData(
+                    ci.text,
+                    self.driver.find_element(By.CSS_SELECTOR, "td[aria-describedby='tabla_nombreapellido']").text,
+                    self.driver.find_element(By.CSS_SELECTOR, "td[aria-describedby='tabla_dpto']").text,
+                    self.driver.find_element(By.CSS_SELECTOR, "td[aria-describedby='tabla_distrito']").text,
+                    self.driver.find_element(By.CSS_SELECTOR, "td[aria-describedby='tabla_concepto_pension']").text,
+                    self.driver.find_element(By.CSS_SELECTOR, "td[aria-describedby='tabla_fechaingreso']").text,
+                    self.driver.find_element(By.CSS_SELECTOR, "td[aria-describedby='tabla_monto_pension']").text,
+                )
+                print(f"Encontrado en Honorifico: {honorifico_data}")
+                return honorifico_data
 
-            return (ci, nombre_apellido, departamento, distrito,
-                    concepto_pension, fecha_ingreso, monto_pension)
         except NoSuchElementException:
-            return None
+            print("No encontrado en Honorifico")
 
-#------------------------------------------------------------------------------------
+        raise CedulaNoExisteException("El número de cédula no existe en honoríficos")
+
+class HonorificoData:
+    def __init__(self, ci, nombre_apellido, departamento, distrito, concepto_pension, fecha_ingreso, monto_pension):
+        self.ci = ci
+        self.nombre_apellido = nombre_apellido
+        self.departamento = departamento
+        self.distrito = distrito
+        self.concepto_pension = concepto_pension
+        self.fecha_ingreso = fecha_ingreso
+        self.monto_pension = monto_pension
+
+    def __repr__(self):
+        return f"HonorificoData(ci={self.ci}, nombre_apellido={self.nombre_apellido}, departamento={self.departamento}, distrito={self.distrito}, concepto_pension={self.concepto_pension}, fecha_ingreso={self.fecha_ingreso}, monto_pension={self.monto_pension})"
 
 class EnProceso(Categoria):
-    """
-    Clase que abstrae una categoria en proceso de pensionado
-    """
     def buscar(self, ci):
-        url = "https://www.mef.gov.py/portalspir/faltadoclam.json"
+        url = "https://www.mef.gov.py/portalspir/data_proc.json"
         response = requests.get(url)
-        json_data = response.json()
+        if response.status_code != 200:
+            raise CedulaNoExisteException("Error al consultar la base de datos de En Proceso")
+        try:
+            json_data = response.json()
+        except ValueError:
+            raise CedulaNoExisteException("Error al decodificar la respuesta de En Proceso")
+        print(f"Buscando en EnProceso: {ci}")
 
         for row in json_data['rows']:
             if row[2] == ci:
+                print(f"Encontrado en EnProceso: {row}")
                 return row
 
-        return None
-
-#------------------------------------------------------------------------------------
+        raise CedulaNoExisteException("El número de cédula no existe en En Proceso")
 
 class Candidato(Categoria):
-    """
-    Clase que abstrae una categoria candidato de pensionado
-    """
     def buscar(self, ci):
-        url = "https://www.mef.gov.py/portalspir/censolam.json"
+        url = "https://www.mef.gov.py/portalspir/data_proc_cand.json"
         response = requests.get(url)
-        json_data = response.json()
+        if response.status_code != 200:
+            raise CedulaNoExisteException("Error al consultar la base de datos de Candidato")
+        try:
+            json_data = response.json()
+        except ValueError:
+            raise CedulaNoExisteException("Error al decodificar la respuesta de Candidato")
+        print(f"Buscando en Candidato: {ci}")
 
         for row in json_data['rows']:
             if row[2] == ci:
+                print(f"Encontrado en Candidato: {row}")
                 return row
 
-        return None
+        raise CedulaNoExisteException("El número de cédula no existe en Candidato")
 
-#------------------------------------------------------------------------------------
+class CedulaNoExisteException(Exception):
+    def __init__(self, message):
+        self.message = message
 
-class PostScraping:
-    """
-    Clase que abstrae un proceso de post scraping
-    """
-    def __init__(self):
-        self.ps_regular = Regular()
-        self.ps_honorifico = Honorifico()
-        self.ps_faltadoc = EnProceso()
-        self.ps_candidato = Candidato()
-
-    def procesar(self, ci):
-        self.procesar_regular(ci)
-        self.procesar_honorifico(ci)
-        self.procesar_faltadoc(ci)
-        self.procesar_candidato(ci)
-
-    def procesar_regular(self, ci):
-        pensionado = Pensionado(ci, self.ps_regular)
-        dato = pensionado.buscar_categoria()
-        if dato:
-            self.mostrar_datos_regular(dato)
-
-    def procesar_honorifico(self, ci):
-        p = Pensionado(ci, self.ps_honorifico)
-        dato = p.buscar_categoria()
-        if dato is None:
-            print("")
-
-    def procesar_faltadoc(self, ci):
-        p = Pensionado(ci, self.ps_faltadoc)
-        dato_faltadoc = p.buscar_categoria()
-        if dato_faltadoc:
-            if (self.ps_regular.buscar(ci) or self.ps_candidato.buscar(ci)):
-                return
-            self.mostrar_datos_faltadoc(dato_faltadoc)
-
-    def procesar_candidato(self, ci):
-        p = Pensionado(ci, self.ps_candidato)
-        dato = p.buscar_categoria()
-        if dato:
-            self.mostrar_datos_candidato(dato)
-
-    def mostrar_datos_regular(self, data):
-        print("")
-        print("Datos Del Pensionado:")
-        print(f"CI: {data[2]}")
-        print(f"Nombre y Apellido: {data[3]}")
-        print(f"Departamento: {data[0]}")
-        print(f"Distrito: {data[1]}")
-        print(f"Sexo: {data[4]}")
-        print(f"Estado: {data[5]}")
-        print(f"Fecha de Ingreso: {data[6]}")
-        print(f"Comunidad Indigena: {data[7]}")
-        print("")
-
-    def mostrar_datos_faltadoc(self, data):
-        print("")
-        print("Datos Del Adulto Mayor:")
-        print(f"CI: {data[2]}")
-        print(f"Nombre y Apellido: {data[3]}")
-        print(f"Departamento: {data[0]}")
-        print(f"Distrito: {data[1]}")
-        print("El Adulto Mayor Necesita Completar Su Documentacion")
-        print("")
-
-    def mostrar_datos_candidato(self, data):
-        print("")
-        print("Datos Del Adulto Mayor:")
-        print(f"CI: {data[2]}")
-        print(f"Nombre y Apellido: {data[3]}")
-        print(f"Departamento: {data[0]}")
-        print(f"Distrito: {data[1]}")
-        print(f"Año Del Censo: {data[5]}")
-        print(f"Institucion: {data[6]}")
-        print(f"Situacion: {data[4]}")
-        print("")
-
-    def guardar_datos(self, filename):
-        """
-        Hace la persistencia de datos mediante pickle
-        :param filename: Nombre del archivo donde estaran los datos
-        """
-        with open(filename, 'wb') as file:
-            pickle.dump(self, file)
-
-    @staticmethod
-    def carga_datos(filename):
-        """
-        Carga los datos de un archivo usando pickle
-        :param filename: Nombre del archivo donde estan los datos
-        :return: Instancias de un PostScraping cargada con los datos
-        """
-        with open(filename, 'rb') as file:
-            return pickle.load(file)
-
-#------------------------------------------------------------------------------------
-
-class EntradaNoNumericaException(Exception):
-    """
-    Excepcion para una entrada que no es numerica
-    """
-    pass
-
-#------------------------------------------------------------------------------------
+class CedulaNoValidaException(Exception):
+    def __init__(self, message):
+        self.message = message
 
 class Menu:
-    """
-    Clase que abstrae la interfaz del sistema
-    """
-    def __init__(self, post_scraping):
-        self.ps = post_scraping
+    def __init__(self, root, ps):
+        self.root = root
+        self.ps = ps
 
     def mostrar_menu(self):
-        """
-        Operacion que muestra el menu y maneja excepciones
-        """
-        while True:
-            print(" ____________________________")
-            print("|   Sistema de Pensionados   |")
-            print(" ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯")
-            print("Seleccione una opcion:")
-            print("1. Ingresar numero de cedula")
-            print("2. Guardar datos")
-            print("3. Cargar datos")
-            print("4. Salir")
-            opcion = input("Opcion: ")
+        self.ps.gui.mostrar_menu()
 
-            if opcion == "1":
-                self.solicitar_ci()
-            elif opcion == "2":
-                self.guardar_datos()
-            elif opcion == "3":
-                self.cargar_datos()
-            elif opcion == "4":
-                print("Saliendo del sistema...")
-                break
+    def solicitar_ci(self, entrada_ci):
+        ci = entrada_ci.get().strip()
+        try:
+            self.ps.procesar(ci)
+        except (CedulaNoExisteException, CedulaNoValidaException) as e:
+            messagebox.showerror("Error", e.message)
+            self.ps.gui.mostrar_error(e.message)
+
+class PostScraping:
+    def __init__(self, gui):
+        self.ps_regular = Regular()
+        self.ps_faltadoc = EnProceso()
+        self.ps_candidato = Candidato()
+        self.ps_honorifico = Honorifico()
+        self.datos_honorificos = []
+        self.gui = gui  # Guardar el objeto GUI
+
+    def procesar(self, ci):
+        encontrado = False
+        datos = None
+        tipo = None
+        try:
+            print(f"Procesando cédula: {ci}")
+            if not ci.isdigit():
+                raise CedulaNoValidaException("La cédula debe ser numérica")
+            datos, tipo = self.procesar_regular(ci)
+            if not datos:
+                datos, tipo = self.procesar_faltadoc(ci)
+            if not datos:
+                datos, tipo = self.procesar_candidato(ci)
+            if not datos:
+                datos, tipo = self.procesar_honorifico(ci)
+
+            if datos:
+                self.guardar_datos(ci, datos, tipo)
             else:
-                print("Opcion no valida. Intente nuevamente.")
+                raise CedulaNoExisteException("El número de cédula no existe")
+        except (CedulaNoExisteException, CedulaNoValidaException) as e:
+            raise e
 
-    def solicitar_ci(self):
-        """
-        Solicita y valida la entrada del numero de cedula
+    def procesar_regular(self, ci):
+        try:
+            dato = self.ps_regular.buscar(ci)
+            if dato:
+                self.gui.mostrar_datos(dato, 'regular')
+                return dato, 'regular'
+        except CedulaNoExisteException:
+            pass
+        return None, None
 
-        :return: ci valido
-        """
-        ci = input("Ingrese el numero de cedula del adulto mayor: ")
-        while True:
-            try:
-                if not ci.isdigit():
-                    raise EntradaNoNumericaException("Ingrese solo numeros")
-                self.ps.procesar(ci)
-                break
-            except EntradaNoNumericaException as e:
-                print(e)
-                ci = input("Ingrese el numero de cedula del adulto mayor: ")
+    def procesar_honorifico(self, ci):
+        try:
+            dato = self.ps_honorifico.buscar(ci)
+            if dato:
+                self.datos_honorificos.append(dato)
+                self.gui.mostrar_datos(dato, 'honorifico')
+                return dato, 'honorifico'
+        except CedulaNoExisteException:
+            pass
+        return None, None
 
-    def guardar_datos(self):
-        """
-        Operacion para poner nombre al archivo donde se persistencia con pickle
-        """
-        filename = input("Ingrese el nombre del archivo donde guardar datos: ")
-        self.ps.guardar_datos(filename)
-        print("Datos guardados en" + filename)
+    def procesar_faltadoc(self, ci):
+        try:
+            dato = self.ps_faltadoc.buscar(ci)
+            if dato and not (self.ps_regular.buscar(ci) or self.ps_candidato.buscar(ci)):
+                self.gui.mostrar_datos(dato, 'faltadoc')
+                return dato, 'faltadoc'
+        except CedulaNoExisteException:
+            pass
+        return None, None
 
-    def cargar_datos(self):
-        """
-        Operacion que carga datos de un archivo de persistencia usando pickle
-        """
-        filename = input("Ingrese el nombre del archivo para cargar: ")
-        self.ps = PostScraping.carga_datos(filename)
-        print("Datos cargados desde" + filename)
+    def procesar_candidato(self, ci):
+        try:
+            dato = self.ps_candidato.buscar(ci)
+            if dato:
+                self.gui.mostrar_datos(dato, 'candidato')
+                return dato, 'candidato'
+        except CedulaNoExisteException:
+            pass
+        return None, None
 
-#------------------------------------------------------------------------------------
+    def guardar_datos(self, ci, datos, tipo):
+        filename = f"datos_{tipo}_{ci}.pickle"
+        with open(filename, 'wb') as file:
+            pickle.dump(datos, file)
+
+    @classmethod
+    def carga_datos(cls, filename):
+        with open(filename, 'rb') as file:
+            data = pickle.load(file)
+        ps = cls()
+        ps.datos_honorificos = data['datos_honorificos']
+        return ps
 
 def main():
     """
-    Operacion main principal que invoca el sistema
+    Operación main principal que invoca el sistema
     """
-    ps = PostScraping()
-    objeto_menu = Menu(ps)
+    root = tk.Tk()
+    gui = GUI(root, None)
+    ps = PostScraping(gui)
+    objeto_menu = Menu(root, ps)
+    gui.controller = objeto_menu
     objeto_menu.mostrar_menu()
-
-#------------------------------------------------------------------------------------
+    root.mainloop()
 
 if __name__ == '__main__':
     main()
