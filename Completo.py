@@ -22,7 +22,7 @@ class GUI:
         marco_menu = tk.Frame(self.root)
         marco_menu.pack(pady=20)
 
-        boton_ingresar_ci = tk.Button(marco_menu, text="Ingresar número de cédula", command=self.mostrar_entrada_ci)
+        boton_ingresar_ci = tk.Button(marco_menu, text="Ingrese un numero de cedula", command=self.mostrar_entrada_ci)
         boton_ingresar_ci.pack(pady=10)
 
         boton_salir = tk.Button(marco_menu, text="Salir", command=self.root.quit)
@@ -34,7 +34,7 @@ class GUI:
         marco_entrada_ci = tk.Frame(self.root)
         marco_entrada_ci.pack(pady=20)
 
-        etiqueta_ci = tk.Label(marco_entrada_ci, text="Ingrese el número de cédula del adulto mayor:")
+        etiqueta_ci = tk.Label(marco_entrada_ci, text="Ingrese el numero de cedula del adulto mayor:")
         etiqueta_ci.pack(pady=5)
 
         self.entrada_ci = tk.Entry(marco_entrada_ci)
