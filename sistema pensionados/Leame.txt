@@ -1,0 +1,24 @@
+Numeros de cedulas para prueba del programa 
+Pensionados regulares:
+55125
+68178
+100488
+
+Con documentos pendientes:
+1486441
+1237374
+565406
+
+Candidatos:
+1374098
+1450303
+1466388
+
+Datos publicados al publico en https://www.mef.gov.py/portalspir/lamdpnc.jsp
+y https://www.mef.gov.py/portalspir/pensiondpnc.jsp
+
+Instrucciones de prueba:
+1. instalar las dependencias desde el archivo requirements.txt
+2. ejecutar por consola con el comando python3 menu.py
+3. ingresar un numero de cedula de la lista de prueba
+
