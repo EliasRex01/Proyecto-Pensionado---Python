@@ -1,0 +1,17 @@
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file .cache/replit/modules/python-3.10","time":"2024-12-22T20:09:17Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file .cache/replit/modules/replit","time":"2024-12-22T20:09:17Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file .pythonlibs/bin/python","time":"2024-12-22T20:09:17Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file .pythonlibs/bin/python3","time":"2024-12-22T20:09:17Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file .pythonlibs/bin/python3.10","time":"2024-12-22T20:09:17Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Hacking/bin/python","time":"2024-12-22T20:09:40Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Hacking/bin/python3","time":"2024-12-22T20:09:40Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Hacking/bin/python3.10","time":"2024-12-22T20:09:40Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Hacking/lib64","time":"2024-12-22T20:09:42Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Paradigmas/bin/python","time":"2024-12-22T20:09:42Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Paradigmas/bin/python3","time":"2024-12-22T20:09:42Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Paradigmas/bin/python3.10","time":"2024-12-22T20:09:42Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Paradigmas/lib64","time":"2024-12-22T20:09:44Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Scraping/bin/python","time":"2024-12-22T20:09:44Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Scraping/bin/python3","time":"2024-12-22T20:09:44Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Scraping/bin/python3.10","time":"2024-12-22T20:09:44Z"}
+{"error":".zip archives do not support non-regular files","level":"error","msg":"unable to write file Entorno_Scraping/lib64","time":"2024-12-22T20:09:48Z"}
